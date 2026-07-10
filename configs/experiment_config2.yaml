@@ -1,0 +1,45 @@
+model:
+  name: "./models/NV-Reason-CXR-3B"   # path lokal; ganti "nvidia/NV-Reason-CXR-3B" untuk load dari HF Hub
+  quantize: "4bit"                      # false | "8bit" | "4bit" — 8.5GB VRAM → pakai 4bit
+  max_new_tokens: 1024
+  temperature: 0.1                      # low temp untuk consistency
+  top_p: 0.9
+  num_beams: 1
+  # Image resolution control (Qwen2-VL)
+  min_pixels: 256   # in patch units (×28×28 pixels) — ~256*784 = 200K pixels
+  max_pixels: 1024  # in patch units — ~1024*784 = 800K pixels (~900×900)
+
+data:
+  # ── CheXpert Plus ──────────────────────────────────────────────────────────
+  chexpert_root: "./data/chexpert_plus"
+
+  # Few-shot pool (300 files: 150 PTX + 150 Normal)
+  chexpert_pool_images_normal:      "./data/chexpert_plus/images/normal"
+  chexpert_pool_images_ptx:         "./data/chexpert_plus/images/pneumothorax"
+  chexpert_ptx_positive_csv:        "./data/chexpert_ptx_positive.csv"
+  chexpert_ptx_negative_csv:        "./data/chexpert_ptx_negative.csv"
+
+  # Internal test set (200 files: 100 PTX + 100 Normal, no-overlap dengan pool)
+  chexpert_internal_test_csv:       "./data/chexpert_internal_test.csv"
+  chexpert_internal_images_normal:  "./data/chexpert_plus/images/internal_test_normal"
+  chexpert_internal_images_ptx:     "./data/chexpert_plus/images/internal_test_pneumothorax"
+
+  # ── RS UNAIR ───────────────────────────────────────────────────────────────
+  rsunair_root: "./data/rs_unair"
+  rsunair_labels_csv:               "./data/rs_unair/labels.csv"
+  rsunair_images_normal:            "./data/rs_unair/images/normal"
+  rsunair_images_ptx:               "./data/rs_unair/images/pneumothorax"
+
+experiments:
+  k_shots: [0, 1, 2, 4, 8]           # jumlah examples per class
+  selection_strategies:
+    - "random"
+    - "diversity"
+    - "similarity"
+  num_random_seeds: 10                 # 10 seeds (0-9) agar Wilcoxon p-min = 0.00195 < 0.05
+  output_dir: "./results"
+
+preprocessing:
+  window_center: 600                   # lung window WC
+  window_width: 1500                   # lung window WW
+  image_format: "PNG"                  # lossless
